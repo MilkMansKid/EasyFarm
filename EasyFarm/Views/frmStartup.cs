@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 */
 ///////////////////////////////////////////////////////////////////
 
-using EasyFarm.FarmingTool;
+using EasyFarm.Classes;
 using FFACETools;
 using System;
 using System.Collections.Generic;
@@ -74,10 +74,13 @@ namespace EasyFarm.Views
         /// <param name="e"></param>
         void ProcessWatcher_Exit(object sender, EventArgs e)
         {
-            App.Current.Dispatcher.Invoke(() =>
+            if (App.Current != null)
             {
-                this.SessionsListBox.Items.Remove(ProcessFormat((e as ProcessEventArgs).Process));
-            });
+                App.Current.Dispatcher.Invoke(() =>
+                {
+                    this.SessionsListBox.Items.Remove(ProcessFormat((e as ProcessEventArgs).Process));
+                });
+            }
         }
 
         /// <summary>
@@ -87,10 +90,13 @@ namespace EasyFarm.Views
         /// <param name="e"></param>
         void ProcessWatcher_Entry(object sender, EventArgs e)
         {
-            App.Current.Dispatcher.Invoke(() =>
+            if (App.Current != null)
             {
-                this.SessionsListBox.Items.Add(ProcessFormat((e as ProcessEventArgs).Process));
-            });
+                App.Current.Dispatcher.Invoke(() =>
+                {
+                    this.SessionsListBox.Items.Add(ProcessFormat((e as ProcessEventArgs).Process));
+                });
+            }
         }
 
         /// <summary>
@@ -135,7 +141,22 @@ namespace EasyFarm.Views
         /// </summary>
         public FFACE SelectedSession
         {
-            get { return new FFACE(SelectedProcess.Id); }
+            get 
+            {
+                try
+                {
+                    if (SelectedProcess == null) return null;
+                    return new FFACE(SelectedProcess.Id); 
+                }
+                catch (DllNotFoundException ex)
+                {
+                    MessageBox.Show(String.Join(Environment.NewLine, 
+                        "FFACE.dll is missing. Please re-run the program with the fface.dll file in EasyFarm's folder. ", 
+                        "Error: " + ex.Message));
+                    System.Environment.Exit(0);
+                    return null;
+                }                
+            }
         }
     }
 }

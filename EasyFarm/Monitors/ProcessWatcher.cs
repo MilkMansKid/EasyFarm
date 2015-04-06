@@ -19,13 +19,15 @@ You should have received a copy of the GNU General Public License
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
+using System.Windows;
 
-namespace EasyFarm.FarmingTool
+namespace EasyFarm.Classes
 {
     public class ProcessEventArgs : EventArgs
     {
@@ -41,7 +43,7 @@ namespace EasyFarm.FarmingTool
 
     public delegate void ProcessExit(object sender, EventArgs e);
 
-    public class ProcessWatcher
+    public class ProcessWatcher : IDisposable
     {
         /// <summary>
         /// An event that fires when a process has started. 
@@ -102,7 +104,7 @@ namespace EasyFarm.FarmingTool
                 {
                     // Add the process
                     this.Processes.Add(process);
-                    
+
                     if (this.Entry != null)
                     {
                         // Fire an entry event. 
@@ -116,21 +118,38 @@ namespace EasyFarm.FarmingTool
 
                 // Fire the process exit event for old processes that 
                 // have exited. 
-                foreach (var process in Processes.Where(x => x.HasExited))
+                try
                 {
-                    if (this.Exit != null)
+                    foreach (var process in Processes.Where(x => x.HasExited))
                     {
-                        // Fire the process Exit event. 
-                        this.Exit(this, new ProcessEventArgs(process));
+                        if (this.Exit != null)
+                        {
+                            // Fire the process Exit event. 
+                            this.Exit(this, new ProcessEventArgs(process));
+                        }
                     }
-                }
 
-                Processes.RemoveAll(x => x.HasExited);
+                    Processes.RemoveAll(x => x.HasExited);
+                }
+                catch (Win32Exception ex)
+                {
+                    // Prevent timer from re-triggering the exception. 
+                    this.m_timer.Dispose();
+
+                    // Handle situation where user has not run the program as an
+                    // administor. 
+                    MessageBox.Show(String.Join(Environment.NewLine,
+                        "This program needs administrator privledges to run. Please re-run EasyFarm as an administrator. ",
+                        "Error: " + ex.Message));
+                    System.Environment.Exit(0);
+                }
             }
         }
 
         public void Start() { this.m_timer.Start(); }
 
         public void Stop() { this.m_timer.Stop(); }
+
+        public void Dispose() { m_timer.Dispose(); }
     }
 }

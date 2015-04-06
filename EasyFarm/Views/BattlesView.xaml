@@ -3,110 +3,82 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+             xmlns:views="clr-namespace:EasyFarm.Views"
+             xmlns:local="clr-namespace:EasyFarm.Classes"
              mc:Ignorable="d"
-             d:DesignHeight="216.384"
-             d:DesignWidth="480.397">
-    <Grid Width="Auto"
-          Height="Auto"
-          FlowDirection="LeftToRight"
-          ShowGridLines="False">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="100" />
-            <ColumnDefinition Width="300" />
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-        <Grid.Resources>
-            <Style TargetType="Button">
-                <Setter Property="Margin"
-                        Value="5" />
-            </Style>
-        </Grid.Resources>
-        <!--Tells us what list to add the textbox item to.-->
-        <StackPanel Grid.Row="1"
-                    Margin="10"
-                    VerticalAlignment="Center">
-            <RadioButton x:Name="radStartingAction"
-                         IsChecked="{Binding StartSelected}">Start</RadioButton>
-            <RadioButton x:Name="radPullingAction"
-                         IsChecked="{Binding PullSelected}">Pull</RadioButton>
-            <RadioButton x:Name="radBattleAction"
-                         IsChecked="{Binding BattleSelected}">Battle</RadioButton>
-            <RadioButton x:Name="radEndingAction"
-                         IsChecked="{Binding EndSelected}">End</RadioButton>
-        </StackPanel>
-        <!--Name of the text box item to add-->
-        <TextBox x:Name="txbAbilityName"
-                 Grid.Column="1"
-                 Margin="10"
-                 Text="{Binding ActionName, UpdateSourceTrigger=PropertyChanged}" />
-        <Label HorizontalAlignment="Stretch"
-               VerticalAlignment="Stretch"
-               Content="Name"
-               Padding="1" />
-        <!--The list of ability items. It's source is dependant on the start/end/battle radio buttons and changes when one is selected. -->
-        <ListBox x:Name="lstAbilities"
-                 Height="Auto"
-                 MaxHeight="100"
-                 Grid.Column="1"
-                 Grid.Row="1"
-                 HorizontalAlignment="Stretch"
-                 Margin="10"
-                 VerticalAlignment="Stretch"
-                 Padding="10"
-                 Width="276"
-                 MinHeight="100">
-            <ListBox.Style>
-                <Style>
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding ElementName=radStartingAction, Path=IsChecked}"
-                                     Value="True">
-                            <Setter Property="ListBox.ItemsSource"
-                                    Value="{Binding StartList}" />
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding ElementName=radBattleAction, Path=IsChecked}"
-                                     Value="True">
-                            <Setter Property="ListBox.ItemsSource"
-                                    Value="{Binding BattleList}" />
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding ElementName=radEndingAction, Path=IsChecked}"
-                                     Value="True">
-                            <Setter Property="ListBox.ItemsSource"
-                                    Value="{Binding EndList}" />
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding ElementName=radPullingAction, Path=IsChecked}"
-                                     Value="True">
-                            <Setter Property="ListBox.ItemsSource"
-                                    Value="{Binding PullList}" />
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </ListBox.Style>
-        </ListBox>
+             d:DesignHeight="300"
+             d:DesignWidth="600">
+    <UserControl.Resources>
+        <HierarchicalDataTemplate DataType="{x:Type local:BattleList}"
+                                  ItemsSource="{Binding Path=Actions}">
+            <TextBlock Text="{Binding Path=Name}" />
+        </HierarchicalDataTemplate>
+
+        <HierarchicalDataTemplate DataType="{x:Type local:BattleAbility}">
+            <TextBlock Text="{Binding Path=Name}" />
+        </HierarchicalDataTemplate>
+
+        <ControlTemplate x:Key="DetailsTemplate">
+            <views:AbilityView />
+        </ControlTemplate>
+    </UserControl.Resources>
+    <DockPanel>
         <!--Used to manipulate the Abilities list-->
-        <Grid Grid.Column="2" Grid.Row="2">
+        <Grid DockPanel.Dock="Bottom"
+              Margin="5">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition />
                 <ColumnDefinition />
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
-            <Button x:Name="btnAddAbility"
-                    Grid.Column="0"
+            <Button Grid.Column="0"
+                    Margin="5"
                     Command="{Binding AddActionCommand}"
-                    CommandParameter="{Binding ElementName=txbAbilityName, Path=Text}"
                     Content="Add" />
-            <Button x:Name="btnDeleteAbility"
-                    Grid.Column="1"
+            <Button Grid.Column="1"
+                    Margin="5"
                     Command="{Binding DeleteActionCommand}"
-                    CommandParameter="{Binding ElementName=lstAbilities, Path=SelectedItem}"
                     Content="Delete" />
-            <Button x:Name="btnClearAbilities"
+            <Button Margin="5"
                     Grid.Column="2"
                     Command="{Binding ClearActionsCommand}"
                     Content="Clear" />
         </Grid>
-    </Grid>
+
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Master Ability View-->
+            <TreeView Name="master"
+                      Margin="5"
+                      Grid.Column="0"
+                      Grid.ColumnSpan="2"
+                      ItemsSource="{Binding BattleLists}"
+                      SelectedItemChanged="TreeView_SelectedItemChanged">
+            </TreeView>
+
+            <!-- Splitter -->
+            <GridSplitter Grid.Column="1"
+                          Width="5" />
+
+            <!-- Detail Ability View -->
+            <ScrollViewer Grid.Column="2"
+                          Margin="5">
+                <ContentControl Name="details"
+                                Template="{StaticResource DetailsTemplate}"
+                                Content="{Binding ElementName=master, Path=SelectedItem}">
+                </ContentControl>
+            </ScrollViewer>
+        </Grid>
+    </DockPanel>
 </UserControl>

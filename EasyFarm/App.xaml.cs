@@ -29,6 +29,10 @@ using EasyFarm.Logging;
 using Microsoft.Practices.EnterpriseLibrary.SemanticLogging;
 using System.Diagnostics.Tracing;
 using System.Collections;
+using EasyFarm.Prism;
+using Parsing.Services;
+using EasyFarm.Components;
+using Microsoft.Practices.Prism.PubSubEvents;
 
 namespace EasyFarm
 {
@@ -38,31 +42,21 @@ namespace EasyFarm
     public partial class App : Application
     {
         /// <summary>
-        /// The files we currently use for AbilityService's resource file parsing. 
+        /// XML parser for looking up ability, spell and weaponskill data. 
         /// </summary>
-        public static readonly String[] resources = { "spells.xml", "abils.xml" };
+        public static readonly AbilityService AbilityService;
 
         /// <summary>
-        /// The url where the resources may be downloaded. 
+        /// Global game engine controlling the player. 
         /// </summary>
-        public const String resourcesUrl =
-            "http://www.ffevo.net/topic/2923-ashita-and-ffacetools-missing-resource-files/";
+        public static GameEngine GameEngine;        
 
-        /// <summary>
-        /// Set up the assembly resolution code to find embedded dll files. 
-        /// Reduces the amount of dll files in the executable's working directory. 
-        /// </summary>
-        public App()
+        static App()
         {
-            var EventListener = new ObservableEventListener();
-            EventListener.EnableEvents(Logger.Write, EventLevel.Verbose);
-            Logger.Write.ApplicationStart("Application starting");
-            AppDomain.CurrentDomain.AssemblyResolve += CurrentDomainOnAssemblyResolve;
-        }
-
-        ~App()
-        {
-            Logger.Write.ApplicationStart("Application exiting");
+            // Create the ability service passing to it the resources 
+            // folder named "resources"
+            AbilityService = new AbilityService("resources");
+            Logger.Write.ResourcesLocated("Resources loaded");
         }
 
         /// <summary>
@@ -72,59 +66,12 @@ namespace EasyFarm
         /// <param name="e"></param>
         protected override void OnStartup(StartupEventArgs e)
         {
-            // Check if the resource files exist.
-            if (!Directory.Exists("resources"))
-            {
-                Logger.Write.ResourceFolderMissing("Resource folder missing");
+            base.OnStartup(e);
 
-                MessageBox.Show(
-                    String.Format("You're missing the resources folder. You can download it from : {0}", resourcesUrl
-                    ));
-
-                Environment.Exit(0);
-            }
-
-            if (resources.Any(x => !File.Exists(Path.Combine("resources", x))))
-            {
-                String[] missing = resources.Where(x => !File.Exists(Path.Combine("resources", x))).ToArray();
-                String message = String.Join(" , ", missing);
-
-                Logger.Write.ResourceFileMissing("Resources missing " + String.Join(" , ", missing));
-
-                MessageBox.Show(
-                    String.Format("You're missing {0} resource files. You can download them from : {1}.",
-                    message, resourcesUrl));
-                Environment.Exit(0);
-            }
-
-            Logger.Write.ResourcesLocated("Resources located");
-
-            // Let user select ffxi process
-            frmStartup ProcessSelectionScreen = new frmStartup();
-            ProcessSelectionScreen.ShowDialog();
-
-            // Validate the selection
-            var m_process = ProcessSelectionScreen.SelectedProcess;
-
-            // Check if the user made a selection. 
-            if (m_process == null)
-            {
-                Logger.Write.ProcessNotFound("Process not found");
-                MessageBox.Show("No valid process was selected: Exiting now.");
-                Environment.Exit(0);
-            }
-
-            Logger.Write.ProcessFound("Process found");
-
-            // Save the selected fface instance. 
-            var FFACE = ProcessSelectionScreen.SelectedSession;
-
-            ViewModelBase.SetSession(FFACE);
-
-            // new DebugSpellCasting(_fface).Show();
-            // new DebugCreatures(_fface, FarmingTools.UnitService).Show();
-            // var dbc = new DebugCreatures(FarmingTools.FFACE, FarmingTools.UnitService);
-            // dbc.Show();
+            Logger.Write.ApplicationStart("Application starting");                        
+                          
+            BootStrapper bootStrapper = new BootStrapper();
+            bootStrapper.Run();
         }
 
         /// <summary>
@@ -133,33 +80,8 @@ namespace EasyFarm
         /// <param name="e"></param>
         protected override void OnExit(ExitEventArgs e)
         {
-            Config.Instance.SaveSettings();
-        }
-
-        // Thanks to atom0s for assembly embedding code!
-
-        /// <summary>
-        /// Assembly resolve event callback to load embedded libraries.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="args"></param>
-        /// <returns></returns>
-        private static Assembly CurrentDomainOnAssemblyResolve(object sender, ResolveEventArgs args)
-        {
-            var dllName = args.Name.Contains(",") ? args.Name.Substring(0, args.Name.IndexOf(",", System.StringComparison.InvariantCultureIgnoreCase)) : args.Name.Replace(".dll", "");
-            if (dllName.ToLower().EndsWith(".resources"))
-                return null;
-
-            var fullName = string.Format("EasyFarm.Embedded.{0}.dll", new AssemblyName(args.Name).Name);
-            using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(fullName))
-            {
-                if (stream == null)
-                    return null;
-
-                var data = new byte[stream.Length];
-                stream.Read(data, 0, (int)stream.Length);
-                return Assembly.Load(data);
-            }
-        }
+            Logger.Write.ApplicationStart("Application exiting");
+            EasyFarm.Properties.Settings.Default.Save();
+        }        
     }
 }

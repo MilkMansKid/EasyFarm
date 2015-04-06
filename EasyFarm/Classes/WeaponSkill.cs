@@ -16,11 +16,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 *////////////////////////////////////////////////////////////////////
 
+using Parsing.Abilities;
 using System;
-using ZeroLimits.XITool;
-using ZeroLimits.XITool.Classes;
 
-namespace EasyFarm.GameData
+namespace EasyFarm.Classes
 {
     public class WeaponSkill
     {

@@ -18,13 +18,7 @@ You should have received a copy of the GNU General Public License
 ///////////////////////////////////////////////////////////////////
 
 using FFACETools;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Timers;
-using ZeroLimits.XITool;
 
 namespace EasyFarm.FarmingTool
 {
@@ -40,7 +34,7 @@ namespace EasyFarm.FarmingTool
             {
                 Zone zone = m_fface.Player.Zone;
 
-                if (m_zone != zone)
+                if (m_zone != zone || m_fface.Player.Stats.Str == 0)
                 {
                     OnChanged(new MonitorArgs<Zone>(zone));
                     m_zone = zone;
